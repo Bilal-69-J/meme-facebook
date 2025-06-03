@@ -1,0 +1,28 @@
+name: Daily Meme Post
+
+on:
+  schedule:
+    # Run daily at 1 PM UTC
+    - cron: '0 13 * * *'
+
+jobs:
+  post-meme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Run meme poster script
+        env:
+          FACEBOOK_MEME_PAGE_TOKEN: ${{ secrets.FACEBOOK_MEME_PAGE_TOKEN }}
+          FACEBOOK_MEME_PAGE_ID: ${{ secrets.FACEBOOK_MEME_PAGE_ID }}
+        run: python main.py
