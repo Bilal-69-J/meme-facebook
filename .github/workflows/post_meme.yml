@@ -4,6 +4,7 @@ on:
   schedule:
     # Run daily at 1 PM UTC
     - cron: '0 13 * * *'
+    workflow_dispatch:
 
 jobs:
   post-meme:
