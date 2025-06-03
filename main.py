@@ -41,7 +41,11 @@ def post_to_facebook(image_path, caption):
     post_url = f"https://graph.facebook.com/{page_id}/photos"
 
     response = requests.post(post_url, files=files, data=payload)
-    print("Posted meme to Facebook:", response.json())
+    print("Status Code:", response.status_code)
+    print("Response Text:", response.text)
+    if response.status_code != 200:
+        raise Exception(f"Facebook API Error: {response.text}")
+
 
 def main():
     try:
