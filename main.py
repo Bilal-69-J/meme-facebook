@@ -1,60 +1,47 @@
-import random
-import requests
 import os
-
-SUBREDDITS = ["memes", "dankmemes", "wholesomememes"]
-
-def get_reddit_meme():
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    for subreddit in SUBREDDITS:
-        url = f"https://www.reddit.com/r/{subreddit}/top.json?limit=30&t=day"
-        response = requests.get(url, headers=headers)
-        if response.status_code != 200:
-            continue
-        posts = response.json().get("data", {}).get("children", [])
-        for post in posts:
-            data = post["data"]
-            if data.get("post_hint") == "image" and not data.get("over_18"):
-                # Return first suitable meme found
-                return {
-                    "url": data["url"],
-                    "caption": data.get("title", "Funny Gen Z Meme from Reddit")
-                }
-    return None
-
-def download_image(image_url):
-    img_data = requests.get(image_url).content
-    filename = "image.jpg"
-    with open(filename, 'wb') as handler:
-        handler.write(img_data)
-    return filename
+import requests
 
 def post_to_facebook(image_path, caption):
     page_token = os.getenv("FACEBOOK_MEME_PAGE_TOKEN")
     page_id = os.getenv("FACEBOOK_MEME_PAGE_ID")
 
+    # Debug environment variables (do NOT print token, just show if set)
+    print("DEBUG: FACEBOOK_MEME_PAGE_ID =", page_id)
+    print("DEBUG: FACEBOOK_MEME_PAGE_TOKEN set =", bool(page_token))
+
+    if not page_token or not page_id:
+        raise Exception("Facebook token or page ID is missing!")
+
     hashtags = "#GenZ #Meme #Funny #DailyMeme #RedditMeme #Laughter #Humor"
     full_caption = f"{caption}\n\n{hashtags}"
 
-    files = {'source': open(image_path, 'rb')}
-    payload = {'access_token': page_token, 'message': full_caption}
-    post_url = f"https://graph.facebook.com/{page_id}/photos"
-
-    response = requests.post(post_url, files=files, data=payload)
-    print("Status Code:", response.status_code)
-    print("Response Text:", response.text)
-    if response.status_code != 200:
-        raise Exception(f"Facebook API Error: {response.text}")
-
-
-def main():
     try:
-        meme = get_reddit_meme()
-        if meme and meme.get("url"):
-            image_path = download_image(meme["url"])
-            post_to_facebook(image_path, meme["caption"])
+        with open(image_path, 'rb') as img_file:
+            files = {'source': img_file}
+            payload = {'access_token': page_token, 'message': full_caption}
+            # Use explicit Graph API version for reliability
+            post_url = f"https://graph.facebook.com/v17.0/{page_id}/photos"
+
+            response = requests.post(post_url, files=files, data=payload)
+
+            print("DEBUG: Facebook API Status Code:", response.status_code)
+            print("DEBUG: Facebook API Response Text:", response.text)
+
+            if response.status_code != 200:
+                raise Exception(f"Facebook API Error: {response.text}")
+
+            print("Post successful!")
+
     except Exception as e:
-        print("Error posting meme:", e)
+        print("Exception in post_to_facebook:", str(e))
+        raise
+
 
 if __name__ == "__main__":
-    main()
+    # Just to test environment variables are loaded properly before posting
+    print("Testing environment variables...")
+    print("FACEBOOK_MEME_PAGE_ID:", os.getenv("FACEBOOK_MEME_PAGE_ID"))
+    print("FACEBOOK_MEME_PAGE_TOKEN set:", bool(os.getenv("FACEBOOK_MEME_PAGE_TOKEN")))
+
+    # Example usage (replace with actual call in your main flow)
+    # post_to_facebook("image.jpg", "Test meme caption")
